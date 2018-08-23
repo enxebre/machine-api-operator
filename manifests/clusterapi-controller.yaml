@@ -52,7 +52,7 @@ spec:
               fieldRef:
                 fieldPath: spec.nodeName
         command:
-          - /libvirt-machine-controller
+          - /machine-controller
         args:
           - --log-level=debug
         resources:
