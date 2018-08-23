@@ -20,7 +20,7 @@ spec:
         k8s-app: controller
     spec:
       nodeSelector:
-        node-role.kubernetes.io/master: ""
+#        node-role.kubernetes.io/master: ""
       tolerations:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
@@ -52,7 +52,7 @@ spec:
               fieldRef:
                 fieldPath: spec.nodeName
         command:
-          - /opt/services/libvirt-machine-controller
+          - /libvirt-machine-controller
         args:
           - --log-level=debug
         resources:
