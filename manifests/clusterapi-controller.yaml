@@ -37,13 +37,13 @@ spec:
         image: gcr.io/k8s-cluster-api/controller-manager:0.0.7
         command:
         - "./controller-manager"
-        resources:
-          requests:
-            cpu: 100m
-            memory: 20Mi
-          limits:
-            cpu: 100m
-            memory: 30Mi
+#        resources:
+#          requests:
+#            cpu: 100m
+#            memory: 20Mi
+#          limits:
+#            cpu: 100m
+#            memory: 30Mi
       - name: libvirt-machine-controller
         image: quay.io/alberto_lamela/libvirt-machine-controller:0.0.1-dev # TODO: move this to openshift org
         env:
@@ -52,7 +52,7 @@ spec:
               fieldRef:
                 fieldPath: spec.nodeName
         command:
-          - /opt/services/aws-machine-controller
+          - /opt/services/libvirt-machine-controller
         args:
           - --log-level=debug
         resources:
