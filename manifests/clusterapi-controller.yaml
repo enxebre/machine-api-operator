@@ -2,12 +2,15 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: clusterapi-controllers
-  namespace: default
+  namespace: kube-system
   labels:
     api: clusterapi
     k8s-app: controller
     tectonic-operators.coreos.com/managed-by: machine-api-operator
 spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
   selector:
     matchLabels:
       api: clusterapi
@@ -62,6 +65,3 @@ spec:
           limits:
             cpu: 100m
             memory: 30Mi
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 65534
