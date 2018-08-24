@@ -62,3 +62,6 @@ spec:
           limits:
             cpu: 100m
             memory: 30Mi
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
