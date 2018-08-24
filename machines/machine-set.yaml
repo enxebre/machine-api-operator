@@ -1,40 +1,43 @@
+---
 apiVersion: cluster.k8s.io/v1alpha1
 kind: MachineSet
 metadata:
-  name: worker
+  name: worker-example-machine-set
   namespace: test
   labels:
-    machineapioperator.openshift.io/cluster: test
+    sigs.k8s.io/cluster-api-cluster: tb-asg-35
+    sigs.k8s.io/cluster-api-machine-role: infra
+    sigs.k8s.io/cluster-api-machine-type: worker
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
-      machineapioperator.openshift.io/machineset: worker
-      machineapioperator.openshift.io/cluster: test
+      sigs.k8s.io/cluster-api-machineset: worker-example-machine-set
+      sigs.k8s.io/cluster-api-cluster: tb-asg-35
+      sigs.k8s.io/cluster-api-machine-role: infra
+      sigs.k8s.io/cluster-api-machine-type: worker
   template:
     metadata:
       labels:
-        machineapioperator.openshift.io/machineset: worker
-        machineapioperator.openshift.io/cluster: test
+        sigs.k8s.io/cluster-api-machineset: worker-example-machine-set
+        sigs.k8s.io/cluster-api-cluster: tb-asg-35
+        sigs.k8s.io/cluster-api-machine-role: infra
+        sigs.k8s.io/cluster-api-machine-type: worker
     spec:
       providerConfig:
         value:
-          apiVersion: awsproviderconfig/v1alpha1
-          kind: AWSMachineProviderConfig
-          clusterId: {{.VpcName}}
-          clusterHardware:
-            aws:
-              keyPairName: {{.SshKey}}
-              region: {{.Region}}
-          hardware:
-            aws:
-              instanceType: m4.large
-          infra: false
-          vmImage:
-            awsImage: {{.Image}}
+          apiVersion: libvirtproviderconfig/v1alpha1
+          kind: LibvirtMachineProviderConfig
+          domainMemory: 2048
+          domainVcpu: 2
+          ignKey: /var/lib/libvirt/images/worker.ign
+          volume:
+            poolName: default
+            baseVolumeID: /var/lib/libvirt/images/coreos_base
+          networkInterfaceName: tectonic
+          networkInterfaceAddress: 192.168.124.12
+          autostart: false
+          uri: {{.LibvirtURI}}
       versions:
-        kubelet: 0.0.0
-        controlPlane: 0.0.0
-      roles:
-      - Master
-
+        kubelet: ""
+        controlPlane: ""
