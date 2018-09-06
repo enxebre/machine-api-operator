@@ -5,7 +5,7 @@ metadata:
   name: worker
   namespace: default
   labels:
-    sigs.k8s.io/cluster-api-cluster: {{.AWS.ClusterName}}
+    sigs.k8s.io/cluster-api-cluster: {{.AWS.ClusterID}}
     sigs.k8s.io/cluster-api-machine-role: worker
     sigs.k8s.io/cluster-api-machine-type: worker
 spec:
@@ -13,12 +13,12 @@ spec:
   selector:
     matchLabels:
       sigs.k8s.io/cluster-api-machineset: worker
-      sigs.k8s.io/cluster-api-cluster: {{.AWS.ClusterName}}
+      sigs.k8s.io/cluster-api-cluster: {{.AWS.ClusterID}}
   template:
     metadata:
       labels:
         sigs.k8s.io/cluster-api-machineset: worker
-        sigs.k8s.io/cluster-api-cluster: {{.AWS.ClusterName}}
+        sigs.k8s.io/cluster-api-cluster: {{.AWS.ClusterID}}
         sigs.k8s.io/cluster-api-machine-role: worker
         sigs.k8s.io/cluster-api-machine-type: worker
     spec:

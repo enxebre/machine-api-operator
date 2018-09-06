@@ -15,6 +15,7 @@ type OperatorConfig struct {
 	Provider        string         `json:"provider"`
 	AWS             *awsConfig     `json:"aws"`
 	Libvirt         *libvirtConfig `json:"libvirt"`
+	Index           int
 }
 
 type libvirtConfig struct {

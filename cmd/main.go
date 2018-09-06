@@ -9,6 +9,8 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/client-go/kubernetes/scheme"
 
+	"strconv"
+
 	opclient "github.com/coreos-inc/tectonic-operators/operator-client/pkg/client"
 	optypes "github.com/coreos-inc/tectonic-operators/operator-client/pkg/types"
 	xotypes "github.com/coreos-inc/tectonic-operators/x-operator/pkg/types"
@@ -101,10 +103,17 @@ func deployMachineSet() {
 	}
 
 	var machinesFolder string
+	var replicas int
 	if operatorConfig.Provider == providerAWS {
 		machinesFolder = "machines/aws"
+		if replicas, err = strconv.Atoi(operatorConfig.AWS.Replicas); err != nil {
+			glog.Fatalf("Error getting replicas: %v", err)
+		}
 	} else if operatorConfig.Provider == providerLibvirt {
 		machinesFolder = "machines/libvirt"
+		if replicas, err = strconv.Atoi(operatorConfig.Libvirt.Replicas); err != nil {
+			glog.Fatalf("Error getting replicas: %v", err)
+		}
 	}
 
 	// Create Cluster object
@@ -141,21 +150,49 @@ func deployMachineSet() {
 	}
 	machineSet := machineSetObj.(*clusterv1.MachineSet)
 
+	// Create Machine objects
+	machineData, err := ioutil.ReadFile(fmt.Sprintf("%s/machine.yaml", machinesFolder)) // just pass the file name
+	if err != nil {
+		glog.Fatalf("Error reading %#v", err)
+	}
+
 	for {
 		glog.Info("Trying to deploy Cluster object")
 		if _, err := v1alphaClient.Clusters("default").Create(cluster); err != nil {
 			glog.Infof("Cannot create cluster, retrying in 5 secs: %v", err)
 		} else {
 			glog.Info("Created Cluster object")
-		}
+			glog.Info("Trying to deploy Machine objects for adoption")
+			for i := 0; i < replicas; i++ {
+				operatorConfig.Index = i
+				machinePopulatedData, err := render.Manifests(operatorConfig, machineData)
+				if err != nil {
+					glog.Fatalf("Unable to render manifests %q: %v", machinePopulatedData, err)
+				}
 
-		glog.Info("Trying to deploy MachineSet object")
-		_, err = v1alphaClient.MachineSets("default").Create(machineSet)
-		if err != nil {
-			glog.Infof("Cannot create MachineSet, retrying in 5 secs: %v", err)
-		} else {
-			glog.Info("Created MachineSet object Successfully")
-			return
+				machineObj, _, err := decode([]byte(machinePopulatedData), nil, nil)
+				if err != nil {
+					glog.Fatalf("Error decoding %#v", err)
+				}
+				machine := machineObj.(*clusterv1.Machine)
+
+				_, err = v1alphaClient.Machines("default").Create(machine)
+				if err != nil {
+					glog.Infof("Cannot create Machine, retrying in 5 secs: %v", err)
+				} else {
+					glog.Infof("Created Machine object %d successfully", i)
+				}
+			}
+
+			glog.Info("Trying to deploy MachineSet object")
+			_, err = v1alphaClient.MachineSets("default").Create(machineSet)
+			if err != nil {
+				glog.Infof("Cannot create MachineSet, retrying in 5 secs: %v", err)
+			} else {
+				glog.Info("Created MachineSet object Successfully")
+				return
+			}
+
 		}
 		time.Sleep(5 * time.Second)
 	}
