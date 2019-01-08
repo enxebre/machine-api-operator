@@ -60,7 +60,7 @@ spec:
                 metadata:
                   type: object
                 spec:
-                  oneOf:
+                  anyOf:
                   - type: object
                     properties:
                       configSource:
