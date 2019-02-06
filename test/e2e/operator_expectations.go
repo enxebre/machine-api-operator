@@ -139,7 +139,7 @@ func (tc *testConfig) ExpectAllMachinesLinkedToANode() error {
 
 func (tc *testConfig) ExpectReconcileControllersDeployment() error {
 	key := types.NamespacedName{
-		Namespace: namespace,
+		Namespace: "openshift-machine-api",
 		Name:      "clusterapi-manager-controllers",
 	}
 	d := &kappsapi.Deployment{}
