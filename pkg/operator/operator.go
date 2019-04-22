@@ -12,6 +12,7 @@ import (
 	configlistersv1 "github.com/openshift/client-go/config/listers/config/v1"
 
 	v1 "k8s.io/api/core/v1"
+	apiextclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -45,6 +46,7 @@ type Operator struct {
 
 	kubeClient    kubernetes.Interface
 	osClient      osclientset.Interface
+	apiExtClient  apiextclientset.Interface
 	eventRecorder record.EventRecorder
 
 	syncHandler func(ic string) error
@@ -72,6 +74,7 @@ func New(
 
 	kubeClient kubernetes.Interface,
 	osClient osclientset.Interface,
+	apiExtClient apiextclientset.Interface,
 ) *Operator {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(glog.Infof)
@@ -93,6 +96,7 @@ func New(
 		ownedManifestsDir: ownedManifestsDir,
 		kubeClient:        kubeClient,
 		osClient:          osClient,
+		apiExtClient:      apiExtClient,
 		eventRecorder:     eventBroadcaster.NewRecorder(eventRecorderScheme, v1.EventSource{Component: "machineapioperator"}),
 		queue:             workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "machineapioperator"),
 		operandVersions:   operandVersions,

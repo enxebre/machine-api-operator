@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/golang/glog"
 	osclientset "github.com/openshift/client-go/config/clientset/versioned"
+	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -22,6 +23,11 @@ func (cb *ClientBuilder) KubeClientOrDie(name string) kubernetes.Interface {
 // OpenshiftClientOrDie returns the kubernetes client interface for Openshift objects.
 func (cb *ClientBuilder) OpenshiftClientOrDie(name string) osclientset.Interface {
 	return osclientset.NewForConfigOrDie(rest.AddUserAgent(cb.config, name))
+}
+
+// APIExtClientOrDie returns the kubernetes client interface for extended kubernetes objects.
+func (cb *ClientBuilder) APIExtClientOrDie(name string) apiext.Interface {
+	return apiext.NewForConfigOrDie(rest.AddUserAgent(cb.config, name))
 }
 
 // NewClientBuilder returns a *ClientBuilder with the given kubeconfig.

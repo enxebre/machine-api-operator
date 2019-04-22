@@ -86,6 +86,7 @@ func startControllers(ctx *ControllerContext) error {
 
 		ctx.ClientBuilder.KubeClientOrDie(componentName),
 		ctx.ClientBuilder.OpenshiftClientOrDie(componentName),
+		ctx.ClientBuilder.APIExtClientOrDie(componentName),
 	).Run(2, ctx.Stop)
 
 	return nil

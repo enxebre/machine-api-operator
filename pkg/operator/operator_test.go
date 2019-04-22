@@ -20,6 +20,7 @@ import (
 	fakeos "github.com/openshift/client-go/config/clientset/versioned/fake"
 	configinformersv1 "github.com/openshift/client-go/config/informers/externalversions"
 	appsv1 "k8s.io/api/apps/v1"
+	fakeext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	fakekube "k8s.io/client-go/kubernetes/fake"
 )
 
@@ -146,13 +147,14 @@ const (
 	hcControllerName = "machine-healthcheck-controller"
 )
 
-func initOperator(featureGate *v1.FeatureGate, kubeclientSet *fakekube.Clientset) (*Operator, error) {
+func initOperator(featureGate *v1.FeatureGate, kubeClientSet *fakekube.Clientset, extClientSet *fakeext.Clientset) (*Operator, error) {
 	configClient := fakeos.NewSimpleClientset(featureGate)
 	configSharedInformer := configinformersv1.NewSharedInformerFactoryWithOptions(configClient, 10*time.Minute)
 	featureGateInformer := configSharedInformer.Config().V1().FeatureGates()
 
 	op := &Operator{
-		kubeClient:        kubeclientSet,
+		kubeClient:        kubeClientSet,
+		apiExtClient:      extClientSet,
 		featureGateLister: featureGateInformer.Lister(),
 		ownedManifestsDir: "../../owned-manifests",
 	}
@@ -215,8 +217,9 @@ func TestOperatorSyncClusterAPIControllerHealthCheckController(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		kubeclientSet := fakekube.NewSimpleClientset()
-		op, err := initOperator(tc.featureGate, kubeclientSet)
+		kubeClientSet := fakekube.NewSimpleClientset()
+		extClientSet := fakeext.NewSimpleClientset()
+		op, err := initOperator(tc.featureGate, kubeClientSet, extClientSet)
 		if err != nil {
 			t.Errorf("Unable to init operator: %v", err)
 		}
@@ -225,7 +228,7 @@ func TestOperatorSyncClusterAPIControllerHealthCheckController(t *testing.T) {
 			t.Errorf("Failed to sync machine API controller: %v", err)
 		}
 
-		d, err := kubeclientSet.AppsV1().Deployments(targetNamespace).Get(deploymentName, metav1.GetOptions{})
+		d, err := kubeClientSet.AppsV1().Deployments(targetNamespace).Get(deploymentName, metav1.GetOptions{})
 		if err != nil {
 			t.Errorf("Failed to get %q deployment: %v", deploymentName, err)
 		}

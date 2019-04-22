@@ -73,6 +73,17 @@ func (optr *Operator) syncClusterAPIController(config OperatorConfig) error {
 	if enabled, ok := features[FeatureGateMachineHealthCheck]; ok && enabled {
 		glog.V(2).Infof("Feature %q is enabled", FeatureGateMachineHealthCheck)
 		config.Controllers.MachineHealthCheckEnabled = true
+
+		machineHealthCheckCRDBytes, err := PopulateTemplate(&config, filepath.Join(optr.ownedManifestsDir, "machinehealthcheck.crd.yaml"))
+		if err != nil {
+			return fmt.Errorf("failed reading machine health check CRD: %v", err)
+		}
+
+		machineHealthCheckCRD := resourceread.ReadCustomResourceDefinitionV1Beta1OrDie(machineHealthCheckCRDBytes)
+		if _, _, err := resourceapply.ApplyCustomResourceDefinition(optr.apiExtClient.ApiextensionsV1beta1(), machineHealthCheckCRD); err != nil {
+			return fmt.Errorf("failed applying machine health check CRD: %v", err)
+		}
+		glog.V(2).Info("Applied machine health check CRD")
 	}
 
 	controllerBytes, err := PopulateTemplate(&config, filepath.Join(optr.ownedManifestsDir, "machine-api-controllers.yaml"))
