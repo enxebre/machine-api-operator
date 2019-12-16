@@ -278,3 +278,4 @@ func TestGetPowerState(t *testing.T) {
 // TODO TestReconcileNetwork()
 // TODO TestReconcileMachineWithCloudState()
 // TODO TestGetNetworkStatus()
+// https://github.com/vmware/govmomi/blob/master/simulator/example_extend_test.go#L33:6
