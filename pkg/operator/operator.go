@@ -10,11 +10,11 @@ import (
 	osclientset "github.com/openshift/client-go/config/clientset/versioned"
 	configinformersv1 "github.com/openshift/client-go/config/informers/externalversions/config/v1"
 	configlistersv1 "github.com/openshift/client-go/config/listers/config/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/informers"
 	appsinformersv1 "k8s.io/client-go/informers/apps/v1"
 	"k8s.io/client-go/kubernetes"
 	appslisterv1 "k8s.io/client-go/listers/apps/v1"
@@ -53,6 +53,9 @@ type Operator struct {
 	featureGateLister      configlistersv1.FeatureGateLister
 	featureGateCacheSynced cache.InformerSynced
 
+	dynamicLister cache.GenericLister
+	dynamicSynced cache.InformerSynced
+
 	// queue only ever has one item, but it has nice error handling backoff/retry semantics
 	queue           workqueue.RateLimitingInterface
 	operandVersions []osconfigv1.OperandVersion
@@ -67,6 +70,7 @@ func New(
 
 	deployInformer appsinformersv1.DeploymentInformer,
 	featureGateInformer configinformersv1.FeatureGateInformer,
+	dynamicInformer informers.GenericInformer,
 
 	kubeClient kubernetes.Interface,
 	osClient osclientset.Interface,
@@ -95,6 +99,7 @@ func New(
 
 	deployInformer.Informer().AddEventHandler(optr.eventHandlerDeployments())
 	featureGateInformer.Informer().AddEventHandler(optr.eventHandler())
+	dynamicInformer.Informer().AddEventHandler(optr.eventHandler())
 
 	optr.config = config
 	optr.syncHandler = optr.sync
@@ -104,6 +109,9 @@ func New(
 
 	optr.featureGateLister = featureGateInformer.Lister()
 	optr.featureGateCacheSynced = featureGateInformer.Informer().HasSynced
+
+	optr.dynamicLister = dynamicInformer.Lister()
+	optr.dynamicSynced = dynamicInformer.Informer().HasSynced
 
 	return optr
 }
@@ -118,7 +126,9 @@ func (optr *Operator) Run(workers int, stopCh <-chan struct{}) {
 
 	if !cache.WaitForCacheSync(stopCh,
 		optr.deployListerSynced,
-		optr.featureGateCacheSynced) {
+		optr.featureGateCacheSynced,
+		optr.dynamicSynced,
+	) {
 		glog.Error("Failed to sync caches")
 		return
 	}

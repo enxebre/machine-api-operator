@@ -54,6 +54,19 @@ func (optr *Operator) syncAll(config *OperatorConfig) error {
 		glog.V(3).Info("Synced up all metal3 components")
 	}
 
+	//provisioning, err := optr.dynamicClient.Resource(
+	//	schema.GroupVersionResource{Group: "metal3.io", Version: "v1alpha1", Resource: "provisionings"}).List(metav1.ListOptions{})
+	//if err != nil {
+	//	fmt.Printf("Provisioning error: %v", err)
+	//}
+	//fmt.Printf("Provisioning: %v", provisioning)
+	//
+	//prov, err := optr.dynamicLister.Get("test")
+	//if err != nil {
+	//	fmt.Printf("LISTER error %v", err)
+	//}
+	//fmt.Printf("LISTER %v", prov)
+
 	if err := optr.statusAvailable(); err != nil {
 		glog.Errorf("Error syncing ClusterOperatorStatus: %v", err)
 		return fmt.Errorf("error syncing ClusterOperatorStatus: %v", err)

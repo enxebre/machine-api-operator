@@ -10,9 +10,13 @@ import (
 	configinformersv1 "github.com/openshift/client-go/config/informers/externalversions"
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/informers"
 	fakekube "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/record"
@@ -42,30 +46,40 @@ func newOperatorConfig() *OperatorConfig {
 func newFakeOperator(kubeObjects []runtime.Object, osObjects []runtime.Object, stopCh <-chan struct{}) *Operator {
 	kubeClient := fakekube.NewSimpleClientset(kubeObjects...)
 	osClient := fakeos.NewSimpleClientset(osObjects...)
+	dynamicClient := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+
 	kubeNamespacedSharedInformer := informers.NewSharedInformerFactoryWithOptions(kubeClient, 2*time.Minute, informers.WithNamespace(targetNamespace))
 	configSharedInformer := configinformersv1.NewSharedInformerFactoryWithOptions(osClient, 2*time.Minute)
 	featureGateInformer := configSharedInformer.Config().V1().FeatureGates()
 	deployInformer := kubeNamespacedSharedInformer.Apps().V1().Deployments()
+	dynamicInformerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicClient, 2*time.Minute, v1.NamespaceAll, nil)
+	dynamicInformer := dynamicInformerFactory.ForResource(schema.GroupVersionResource{
+		Group: "metal3.io", Version: "v1alpha1", Resource: "provisionings"})
 
 	optr := &Operator{
-		kubeClient:             kubeClient,
-		osClient:               osClient,
-		featureGateLister:      featureGateInformer.Lister(),
-		deployLister:           deployInformer.Lister(),
+		kubeClient:        kubeClient,
+		osClient:          osClient,
+		featureGateLister: featureGateInformer.Lister(),
+		deployLister:      deployInformer.Lister(),
+		dynamicLister:     dynamicInformer.Lister(),
+
 		imagesFile:             "fixtures/images.json",
 		namespace:              targetNamespace,
 		eventRecorder:          record.NewFakeRecorder(50),
 		queue:                  workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "machineapioperator"),
 		deployListerSynced:     deployInformer.Informer().HasSynced,
 		featureGateCacheSynced: featureGateInformer.Informer().HasSynced,
+		dynamicSynced:          dynamicInformer.Informer().HasSynced,
 	}
 
 	configSharedInformer.Start(stopCh)
 	kubeNamespacedSharedInformer.Start(stopCh)
+	dynamicInformerFactory.Start(stopCh)
 
 	optr.syncHandler = optr.sync
 	deployInformer.Informer().AddEventHandler(optr.eventHandlerDeployments())
 	featureGateInformer.Informer().AddEventHandler(optr.eventHandler())
+	dynamicInformer.Informer().AddEventHandler(optr.eventHandler())
 
 	return optr
 }

@@ -13,11 +13,11 @@ import (
 	"github.com/openshift/machine-api-operator/pkg/metrics"
 	"github.com/openshift/machine-api-operator/pkg/operator"
 	"github.com/openshift/machine-api-operator/pkg/version"
-	"github.com/spf13/cobra"
-
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/spf13/cobra"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	coreclientsetv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -78,6 +78,7 @@ func runStartCmd(cmd *cobra.Command, args []string) {
 				startControllers(ctrlCtx)
 				ctrlCtx.KubeNamespacedInformerFactory.Start(ctrlCtx.Stop)
 				ctrlCtx.ConfigInformerFactory.Start(ctrlCtx.Stop)
+				ctrlCtx.DynamicInformerFactory.Start(ctrlCtx.Stop)
 				initMachineAPIInformers(ctrlCtx)
 				startMetricsCollectionAndServer(ctrlCtx)
 				close(ctrlCtx.InformersStarted)
@@ -116,12 +117,15 @@ func initRecorder(kubeClient kubernetes.Interface) record.EventRecorder {
 func startControllers(ctx *ControllerContext) {
 	kubeClient := ctx.ClientBuilder.KubeClientOrDie(componentName)
 	recorder := initRecorder(kubeClient)
+
 	go operator.New(
 		componentNamespace, componentName,
 		startOpts.imagesFile,
 		config,
 		ctx.KubeNamespacedInformerFactory.Apps().V1().Deployments(),
 		ctx.ConfigInformerFactory.Config().V1().FeatureGates(),
+		ctx.DynamicInformerFactory.ForResource(schema.GroupVersionResource{
+			Group: "metal3.io", Version: "v1alpha1", Resource: "provisionings"}),
 		ctx.ClientBuilder.KubeClientOrDie(componentName),
 		ctx.ClientBuilder.OpenshiftClientOrDie(componentName),
 		ctx.ClientBuilder.dynamicClientOrDie(componentName),
