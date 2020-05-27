@@ -29,6 +29,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+)
+
+const (
+	defaultWebhookPort    = 8443
+	defaultWebhookCertdir = "/etc/machine-api-operator/tls"
 )
 
 func main() {
@@ -56,10 +62,27 @@ func main() {
 		SyncPeriod:         &syncPeriod,
 		Namespace:          *watchNamespace,
 	}
+
 	mgr, err := manager.New(cfg, opts)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Enable defaulting and validating webhooks
+	defaulter, err := v1beta1.NewDefaulter()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	validator, err := v1beta1.NewValidator()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mgr.GetWebhookServer().Port = defaultWebhookPort
+	mgr.GetWebhookServer().CertDir = defaultWebhookCertdir
+	mgr.GetWebhookServer().Register("/mutate-machine-openshift-io-v1beta1-machine", &webhook.Admission{Handler: defaulter})
+	mgr.GetWebhookServer().Register("/validate-machine-openshift-io-v1beta1-machine", &webhook.Admission{Handler: validator})
 
 	log.Printf("Registering Components.")
 
@@ -72,6 +95,7 @@ func main() {
 	if err := controller.AddToManager(mgr, opts, machineset.Add); err != nil {
 		log.Fatal(err)
 	}
+
 	log.Printf("Starting the Cmd.")
 
 	// Start the Cmd

@@ -1,0 +1,58 @@
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: mutating-webhook-configuration
+  annotations:
+    "service.beta.openshift.io/inject-cabundle": "true"
+webhooks:
+- clientConfig:
+    service:
+      name: machine-api-operator-webhook
+      namespace: openshift-machine-api
+      path: /mutate-machine-openshift-io-v1beta1-machine
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: default.machine.machine.openshift.io
+  rules:
+  - apiGroups:
+    - machine.openshift.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - machines
+  sideEffects: None
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+  annotations:
+    "service.beta.openshift.io/inject-cabundle": "true"
+webhooks:
+  - clientConfig:
+      service:
+        name: machine-api-operator-webhook
+        namespace: openshift-machine-api
+        path: /validate-machine-openshift-io-v1beta1-machine
+    failurePolicy: Fail
+    matchPolicy: Equivalent
+    name: validation.machine.machine.openshift.io
+    rules:
+      - apiGroups:
+          - machine.openshift.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - machines
+    sideEffects: None

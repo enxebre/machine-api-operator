@@ -32,6 +32,7 @@ type ProviderSpec struct {
 	// field, akin to component config.
 	// +optional
 	// +kubebuilder:validation:XPreserveUnknownFields
+	// +kubebuilder:validation:XEmbeddedResource
 	Value *runtime.RawExtension `json:"value,omitempty"`
 }
 
