@@ -118,6 +118,75 @@ metadata:
 rules:
 
   - apiGroups:
+      - machine.openshift.io
+    resources:
+      - '*'
+    verbs:
+      - '*'
+
+  - apiGroups:
+      - healthchecking.openshift.io
+    resources:
+      - '*'
+    verbs:
+      - '*'
+
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - watch
+      - list
+      - patch
+
+  - apiGroups:
+      - metal3.io
+    resources:
+      - baremetalhosts
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+      - patch
+
+  - apiGroups:
+      - metal3.io
+    resources:
+      - baremetalhosts/status
+      - baremetalhosts/finalizers
+    verbs:
+      - update
+
+  - apiGroups:
       - ""
     resources:
       - nodes
