@@ -448,7 +448,7 @@ func newContainers(config *OperatorConfig, features map[string]bool) []corev1.Co
 		"--v=3",
 		"--leader-elect=true",
 		"--leader-elect-lease-duration=90s",
-		fmt.Sprintf("--namespace=%s", config.TargetNamespace),
+		//fmt.Sprintf("--namespace=%s", config.TargetNamespace),
 	}
 
 	containers := []corev1.Container{
@@ -683,7 +683,7 @@ func newTerminationContainers(config *OperatorConfig) []corev1.Container {
 		"--logtostderr=true",
 		"--v=3",
 		"--node-name=$(NODE_NAME)",
-		fmt.Sprintf("--namespace=%s", config.TargetNamespace),
+		//fmt.Sprintf("--namespace=%s", config.TargetNamespace),
 		"--poll-interval-seconds=5",
 	}
 	return []corev1.Container{
