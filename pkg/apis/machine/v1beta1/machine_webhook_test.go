@@ -1869,7 +1869,6 @@ func TestDefaultVSphereProviderSpec(t *testing.T) {
 				},
 				NumCPUs:   minVSphereCPU,
 				MemoryMiB: minVSphereMemoryMiB,
-				DiskGiB:   minVSphereDiskGiB,
 			}
 			if tc.modifyDefault != nil {
 				tc.modifyDefault(defaultProviderSpec)
