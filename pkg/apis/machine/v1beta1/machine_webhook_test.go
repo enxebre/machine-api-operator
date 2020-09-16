@@ -342,8 +342,7 @@ func TestMachineUpdate(t *testing.T) {
 				Image:      defaultGCPDiskImage,
 			},
 		},
-		ServiceAccounts: defaultGCPServiceAccounts(gcpClusterID, gcpProjectID),
-		Tags:            defaultGCPTags(gcpClusterID),
+		Tags: defaultGCPTags(gcpClusterID),
 		UserDataSecret: &corev1.LocalObjectReference{
 			Name: defaultUserDataSecret,
 		},
@@ -555,22 +554,6 @@ func TestMachineUpdate(t *testing.T) {
 				}
 			},
 			expectedError: "providerSpec.disks: Required value: at least 1 disk is required",
-		},
-		{
-			name:         "with a GCP ProviderSpec, removing the service accounts",
-			platformType: osconfigv1.GCPPlatformType,
-			clusterID:    gcpClusterID,
-			baseProviderSpecValue: &runtime.RawExtension{
-				Object: defaultGCPProviderSpec.DeepCopy(),
-			},
-			updatedProviderSpecValue: func() *runtime.RawExtension {
-				object := defaultGCPProviderSpec.DeepCopy()
-				object.ServiceAccounts = nil
-				return &runtime.RawExtension{
-					Object: object,
-				}
-			},
-			expectedError: "providerSpec.serviceAccounts: Invalid value: \"0 service accounts supplied\": exactly 1 service account must be supplied",
 		},
 		{
 			name:         "with a valid VSphere ProviderSpec",
@@ -1441,30 +1424,6 @@ func TestValidateGCPProviderSpec(t *testing.T) {
 			expectedError: "providerSpec.serviceAccounts: Invalid value: \"2 service accounts supplied\": exactly 1 service account must be supplied",
 		},
 		{
-			testCase: "with the service account's email missing",
-			modifySpec: func(p *gcp.GCPMachineProviderSpec) {
-				p.ServiceAccounts = []gcp.GCPServiceAccount{
-					{
-						Scopes: []string{"scope"},
-					},
-				}
-			},
-			expectedOk:    false,
-			expectedError: "providerSpec.serviceAccounts[0].email: Required value: email is required",
-		},
-		{
-			testCase: "with the service account's with no scopes",
-			modifySpec: func(p *gcp.GCPMachineProviderSpec) {
-				p.ServiceAccounts = []gcp.GCPServiceAccount{
-					{
-						Email: "email",
-					},
-				}
-			},
-			expectedOk:    false,
-			expectedError: "providerSpec.serviceAccounts[0].scopes: Required value: at least 1 scope is required",
-		},
-		{
 			testCase: "with no user data secret",
 			modifySpec: func(p *gcp.GCPMachineProviderSpec) {
 				p.UserDataSecret = nil
@@ -1635,8 +1594,7 @@ func TestDefaultGCPProviderSpec(t *testing.T) {
 					Image:      defaultGCPDiskImage,
 				},
 			},
-			ServiceAccounts: defaultGCPServiceAccounts(clusterID, projectID),
-			Tags:            defaultGCPTags(clusterID),
+			Tags: defaultGCPTags(clusterID),
 			UserDataSecret: &corev1.LocalObjectReference{
 				Name: defaultUserDataSecret,
 			},

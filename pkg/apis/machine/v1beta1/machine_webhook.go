@@ -44,16 +44,6 @@ var (
 	defaultGCPTags = func(clusterID string) []string {
 		return []string{fmt.Sprintf("%s-worker", clusterID)}
 	}
-	defaultGCPServiceAccounts = func(clusterID, projectID string) []gcp.GCPServiceAccount {
-		if clusterID == "" || projectID == "" {
-			return []gcp.GCPServiceAccount{}
-		}
-
-		return []gcp.GCPServiceAccount{{
-			Email:  fmt.Sprintf("%s-w@%s.iam.gserviceaccount.com", clusterID, projectID),
-			Scopes: []string{"https://www.googleapis.com/auth/cloud-platform"},
-		}}
-	}
 )
 
 const (
@@ -750,10 +740,6 @@ func (g gcpDefaulter) defaultGCP(m *Machine, clusterID string) (bool, utilerrors
 		providerSpec.CredentialsSecret = &corev1.LocalObjectReference{Name: defaultGCPCredentialsSecret}
 	}
 
-	if len(providerSpec.ServiceAccounts) == 0 {
-		providerSpec.ServiceAccounts = defaultGCPServiceAccounts(clusterID, g.projectID)
-	}
-
 	rawBytes, err := json.Marshal(providerSpec)
 	if err != nil {
 		errs = append(errs, err)
@@ -817,7 +803,6 @@ func validateGCP(m *Machine, clusterID string) (bool, utilerrors.Aggregate) {
 
 	errs = append(errs, validateGCPNetworkInterfaces(providerSpec.NetworkInterfaces, field.NewPath("providerSpec", "networkInterfaces"))...)
 	errs = append(errs, validateGCPDisks(providerSpec.Disks, field.NewPath("providerSpec", "disks"))...)
-	errs = append(errs, validateGCPServiceAccounts(providerSpec.ServiceAccounts, field.NewPath("providerSpec", "serviceAccounts"))...)
 
 	if providerSpec.UserDataSecret == nil {
 		errs = append(errs, field.Required(field.NewPath("providerSpec", "userDataSecret"), "userDataSecret must be provided"))
@@ -887,26 +872,6 @@ func validateGCPDisks(disks []*gcp.GCPDisk, parentPath *field.Path) []error {
 		}
 	}
 
-	return errs
-}
-
-func validateGCPServiceAccounts(serviceAccounts []gcp.GCPServiceAccount, parentPath *field.Path) []error {
-	if len(serviceAccounts) != 1 {
-		return []error{field.Invalid(parentPath, fmt.Sprintf("%d service accounts supplied", len(serviceAccounts)), "exactly 1 service account must be supplied")}
-	}
-
-	var errs []error
-	for i, serviceAccount := range serviceAccounts {
-		fldPath := parentPath.Index(i)
-
-		if serviceAccount.Email == "" {
-			errs = append(errs, field.Required(fldPath.Child("email"), "email is required"))
-		}
-
-		if len(serviceAccount.Scopes) == 0 {
-			errs = append(errs, field.Required(fldPath.Child("scopes"), "at least 1 scope is required"))
-		}
-	}
 	return errs
 }
 

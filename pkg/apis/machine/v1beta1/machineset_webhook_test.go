@@ -331,8 +331,7 @@ func TestMachineSetUpdate(t *testing.T) {
 				Image:      defaultGCPDiskImage,
 			},
 		},
-		ServiceAccounts: defaultGCPServiceAccounts(gcpClusterID, gcpProjectID),
-		Tags:            defaultGCPTags(gcpClusterID),
+		Tags: defaultGCPTags(gcpClusterID),
 		UserDataSecret: &corev1.LocalObjectReference{
 			Name: defaultUserDataSecret,
 		},
