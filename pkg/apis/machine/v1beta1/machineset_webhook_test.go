@@ -112,7 +112,7 @@ func TestMachineSetCreation(t *testing.T) {
 			providerSpecValue: &runtime.RawExtension{
 				Object: &azure.AzureMachineProviderSpec{},
 			},
-			expectedError: "[providerSpec.location: Required value: location should be set to one of the supported Azure regions, providerSpec.osDisk.diskSizeGB: Invalid value: 0: diskSizeGB must be greater than zero]",
+			expectedError: "providerSpec.osDisk.diskSizeGB: Invalid value: 0: diskSizeGB must be greater than zero",
 		},
 		{
 			name:         "with Azure and a location and disk size set",
@@ -292,16 +292,11 @@ func TestMachineSetUpdate(t *testing.T) {
 
 	azureClusterID := "azure-cluster"
 	defaultAzureProviderSpec := &azure.AzureMachineProviderSpec{
-		Location:             "location",
-		VMSize:               defaultAzureVMSize,
-		Vnet:                 defaultAzureVnet(azureClusterID),
-		Subnet:               defaultAzureSubnet(azureClusterID),
-		NetworkResourceGroup: defaultAzureNetworkResourceGroup(azureClusterID),
+		Location: "location",
+		VMSize:   defaultAzureVMSize,
 		Image: azure.Image{
 			ResourceID: defaultAzureImageResourceID(azureClusterID),
 		},
-		ManagedIdentity: defaultAzureManagedIdentiy(azureClusterID),
-		ResourceGroup:   defaultAzureResourceGroup(azureClusterID),
 		UserDataSecret: &corev1.SecretReference{
 			Name:      defaultUserDataSecret,
 			Namespace: defaultSecretNamespace,
@@ -312,10 +307,6 @@ func TestMachineSetUpdate(t *testing.T) {
 		},
 		OSDisk: azure.OSDisk{
 			DiskSizeGB: 128,
-			OSType:     defaultAzureOSDiskOSType,
-			ManagedDisk: azure.ManagedDisk{
-				StorageAccountType: defaultAzureOSDiskStorageType,
-			},
 		},
 	}
 
@@ -475,22 +466,6 @@ func TestMachineSetUpdate(t *testing.T) {
 				}
 			},
 			expectedError: "providerSpec.vmSize: Required value: vmSize should be set to one of the supported Azure VM sizes",
-		},
-		{
-			name:         "with an Azure ProviderSpec, removing the subnet",
-			platformType: osconfigv1.AzurePlatformType,
-			clusterID:    azureClusterID,
-			baseProviderSpecValue: &runtime.RawExtension{
-				Object: defaultAzureProviderSpec.DeepCopy(),
-			},
-			updatedProviderSpecValue: func() *runtime.RawExtension {
-				object := defaultAzureProviderSpec.DeepCopy()
-				object.Subnet = ""
-				return &runtime.RawExtension{
-					Object: object,
-				}
-			},
-			expectedError: "providerSpec.subnet: Required value: must provide a subnet when a virtual network is specified",
 		},
 		{
 			name:         "with an Azure ProviderSpec, removing the credentials secret",

@@ -30,23 +30,8 @@ import (
 
 var (
 	// Azure Defaults
-	defaultAzureVnet = func(clusterID string) string {
-		return fmt.Sprintf("%s-vnet", clusterID)
-	}
-	defaultAzureSubnet = func(clusterID string) string {
-		return fmt.Sprintf("%s-worker-subnet", clusterID)
-	}
-	defaultAzureNetworkResourceGroup = func(clusterID string) string {
-		return fmt.Sprintf("%s-rg", clusterID)
-	}
 	defaultAzureImageResourceID = func(clusterID string) string {
 		return fmt.Sprintf("/resourceGroups/%s/providers/Microsoft.Compute/images/%s", clusterID+"-rg", clusterID)
-	}
-	defaultAzureManagedIdentiy = func(clusterID string) string {
-		return fmt.Sprintf("%s-identity", clusterID)
-	}
-	defaultAzureResourceGroup = func(clusterID string) string {
-		return fmt.Sprintf("%s-rg", clusterID)
 	}
 
 	// GCP Defaults
@@ -91,8 +76,6 @@ const (
 	// Azure Defaults
 	defaultAzureVMSize            = "Standard_D4s_V3"
 	defaultAzureCredentialsSecret = "azure-cloud-credentials"
-	defaultAzureOSDiskOSType      = "Linux"
-	defaultAzureOSDiskStorageType = "Premium_LRS"
 
 	// GCP Defaults
 	defaultGCPMachineType       = "n1-standard-4"
@@ -606,28 +589,8 @@ func defaultAzure(m *Machine, clusterID string) (bool, utilerrors.Aggregate) {
 		providerSpec.VMSize = defaultAzureVMSize
 	}
 
-	// Vnet and Subnet need to be provided together by the user
-	if providerSpec.Vnet == "" && providerSpec.Subnet == "" {
-		providerSpec.Vnet = defaultAzureVnet(clusterID)
-		providerSpec.Subnet = defaultAzureSubnet(clusterID)
-
-		// NetworkResourceGroup can be set by the user without Vnet and Subnet,
-		// only override if they didn't set it
-		if providerSpec.NetworkResourceGroup == "" {
-			providerSpec.NetworkResourceGroup = defaultAzureNetworkResourceGroup(clusterID)
-		}
-	}
-
 	if providerSpec.Image == (azure.Image{}) {
 		providerSpec.Image.ResourceID = defaultAzureImageResourceID(clusterID)
-	}
-
-	if providerSpec.ManagedIdentity == "" {
-		providerSpec.ManagedIdentity = defaultAzureManagedIdentiy(clusterID)
-	}
-
-	if providerSpec.ResourceGroup == "" {
-		providerSpec.ResourceGroup = defaultAzureResourceGroup(clusterID)
 	}
 
 	if providerSpec.UserDataSecret == nil {
@@ -645,14 +608,6 @@ func defaultAzure(m *Machine, clusterID string) (bool, utilerrors.Aggregate) {
 		if providerSpec.CredentialsSecret.Name == "" {
 			providerSpec.CredentialsSecret.Name = defaultAzureCredentialsSecret
 		}
-	}
-
-	if providerSpec.OSDisk.OSType == "" {
-		providerSpec.OSDisk.OSType = defaultAzureOSDiskOSType
-	}
-
-	if providerSpec.OSDisk.ManagedDisk.StorageAccountType == "" {
-		providerSpec.OSDisk.ManagedDisk.StorageAccountType = defaultAzureOSDiskStorageType
 	}
 
 	rawBytes, err := json.Marshal(providerSpec)
@@ -678,10 +633,6 @@ func validateAzure(m *Machine, clusterID string) (bool, utilerrors.Aggregate) {
 		return false, utilerrors.NewAggregate(errs)
 	}
 
-	if providerSpec.Location == "" {
-		errs = append(errs, field.Required(field.NewPath("providerSpec", "location"), "location should be set to one of the supported Azure regions"))
-	}
-
 	if providerSpec.VMSize == "" {
 		errs = append(errs, field.Required(field.NewPath("providerSpec", "vmSize"), "vmSize should be set to one of the supported Azure VM sizes"))
 	}
@@ -703,14 +654,6 @@ func validateAzure(m *Machine, clusterID string) (bool, utilerrors.Aggregate) {
 
 	errs = append(errs, validateAzureImage(providerSpec.Image)...)
 
-	if providerSpec.ManagedIdentity == "" {
-		errs = append(errs, field.Required(field.NewPath("providerSpec", "managedIdentity"), "managedIdentity must be provided"))
-	}
-
-	if providerSpec.ResourceGroup == "" {
-		errs = append(errs, field.Required(field.NewPath("providerSpec", "resourceGroup"), "resourceGroup must be provided"))
-	}
-
 	if providerSpec.UserDataSecret == nil {
 		errs = append(errs, field.Required(field.NewPath("providerSpec", "userDataSecret"), "userDataSecret must be provided"))
 	} else if providerSpec.UserDataSecret.Name == "" {
@@ -730,13 +673,6 @@ func validateAzure(m *Machine, clusterID string) (bool, utilerrors.Aggregate) {
 
 	if providerSpec.OSDisk.DiskSizeGB <= 0 {
 		errs = append(errs, field.Invalid(field.NewPath("providerSpec", "osDisk", "diskSizeGB"), providerSpec.OSDisk.DiskSizeGB, "diskSizeGB must be greater than zero"))
-	}
-
-	if providerSpec.OSDisk.OSType == "" {
-		errs = append(errs, field.Required(field.NewPath("providerSpec", "osDisk", "osType"), "osType must be provided"))
-	}
-	if providerSpec.OSDisk.ManagedDisk.StorageAccountType == "" {
-		errs = append(errs, field.Required(field.NewPath("providerSpec", "osDisk", "managedDisk", "storageAccountType"), "storageAccountType must be provided"))
 	}
 
 	if len(errs) > 0 {
