@@ -281,33 +281,12 @@ func TestMachineSetUpdate(t *testing.T) {
 		AMI: aws.AWSResourceReference{
 			ID: pointer.StringPtr("ami"),
 		},
-		InstanceType: defaultAWSInstanceType,
-		IAMInstanceProfile: &aws.AWSResourceReference{
-			ID: defaultAWSIAMInstanceProfile(awsClusterID),
-		},
+		InstanceType:      defaultAWSInstanceType,
 		UserDataSecret:    &corev1.LocalObjectReference{Name: defaultUserDataSecret},
 		CredentialsSecret: &corev1.LocalObjectReference{Name: defaultAWSCredentialsSecret},
-		SecurityGroups: []aws.AWSResourceReference{
-			{
-				Filters: []aws.Filter{
-					{
-						Name:   "tag:Name",
-						Values: []string{defaultAWSSecurityGroup(awsClusterID)},
-					},
-				},
-			},
-		},
 		Placement: aws.Placement{
 			Region:           awsRegion,
 			AvailabilityZone: "zone",
-		},
-		Subnet: aws.AWSResourceReference{
-			Filters: []aws.Filter{
-				{
-					Name:   "tag:Name",
-					Values: []string{defaultAWSSubnet(awsClusterID, "zone")},
-				},
-			},
 		},
 	}
 
@@ -450,22 +429,6 @@ func TestMachineSetUpdate(t *testing.T) {
 				}
 			},
 			expectedError: "providerSpec.instanceType: Required value: expected providerSpec.instanceType to be populated",
-		},
-		{
-			name:         "with an AWS ProviderSpec, removing the instance profile",
-			platformType: osconfigv1.AWSPlatformType,
-			clusterID:    awsClusterID,
-			baseProviderSpecValue: &runtime.RawExtension{
-				Object: defaultAWSProviderSpec.DeepCopy(),
-			},
-			updatedProviderSpecValue: func() *runtime.RawExtension {
-				object := defaultAWSProviderSpec.DeepCopy()
-				object.IAMInstanceProfile = nil
-				return &runtime.RawExtension{
-					Object: object,
-				}
-			},
-			expectedError: "providerSpec.iamInstanceProfile: Required value: expected providerSpec.iamInstanceProfile to be populated",
 		},
 		{
 			name:         "with an AWS ProviderSpec, removing the user data secret",
